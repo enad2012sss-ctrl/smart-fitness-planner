@@ -2,39 +2,28 @@
 
 ## Summary
 
-A simple AI system that suggests a **personalized weekly workout plan** based on:
-- User's available time each week (in hours)
-- Goal (weight loss / muscle building / general fitness)
-- Level (beginner / intermediate / advanced)
-
-Instead of the person searching by themselves for a suitable workout schedule, the system automatically distributes workout types (cardio, strength training, stretching) across the days of the week in the best possible way.
+A simple AI system that suggests a personalized weekly workout plan based on the user's available hours, fitness goals, and training level. The system automatically distributes cardio, strength training, and recovery sessions in the best possible way. This is the final project for the Building AI course.
 
 ## Background
 
-Many people know they need to work out, but they don't know how to distribute their limited time in the best way among different workout types. This project turns the "planning" problem into an optimization problem that AI can solve efficiently.
+Many people struggle to plan their workout routine or optimize their limited time. This project solves that by transforming workout scheduling into an AI optimization problem using the Hill Climbing algorithm.
 
-## How the System Works
+## How is it used?
 
-The project relies on the **Hill Climbing** method that we learned in the Building AI course:
+The system is designed for fitness enthusiasts of all levels. Users input their preferences, and the system uses optimization to generate a balanced weekly schedule.
 
-1. The system starts with an initial random workout schedule across the week.
-2. It evaluates the "quality" of the schedule based on criteria such as:
-   - Balanced distribution between rest days and workout days
-   - Suitability of the workout type with the user's goal
-   - Not repeating the same muscle group two consecutive days
-3. The system tries small adjustments to the schedule (swapping a day with another day, changing the workout type) and keeps the adjustment if it improves the "quality".
-4. It repeats this process until it reaches the best possible schedule within the available time.
+## Data sources and AI methods
 
-## Technologies
+The project uses simulated fitness constraints and rules as data sources. It is powered by the **Hill Climbing** optimization algorithm to iteratively improve the schedule's "quality" score.
 
-- Python
-- Hill Climbing algorithm for optimization
-- (Optional later) A simple HTML interface for user data entry
+## Challenges
 
-## Project Status
+The main challenge is balancing multiple complex constraints (like not training the same muscle group two days in a row) without getting stuck in local optima.
 
-This is a graduation project for the *Elements of AI: Building AI* course. The current version is a description of the idea and methodology; the next step is writing the actual code to apply the algorithm.
+## What next?
 
-## Disclaimer
+The next step is to write the complete Python implementation and potentially build a simple web interface (HTML/CSS) to make it accessible to non-technical users.
 
-This is an educational project only, and it does not replace consulting a professional fitness trainer before starting any workout program.
+## Acknowledgments
+
+Reaktor and University of Helsinki for creating Elements of AI and Building AI.
