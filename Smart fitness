@@ -1,0 +1,40 @@
+# Smart Fitness Planner
+
+## Project Idea
+
+A simple AI system that suggests a **personalized weekly workout plan** based on:
+- User's available time each week (in hours)
+- Goal (weight loss / muscle building / general fitness)
+- Level (beginner / intermediate / advanced)
+
+Instead of the person searching by themselves for a suitable workout schedule, the system automatically distributes workout types (cardio, strength training, stretching) across the days of the week in the best possible way.
+
+## How the System Works?
+
+The project relies on the **Hill Climbing** method that we learned in the Building AI course:
+
+1. The system starts with an initial random workout schedule across the week.
+2. It evaluates the "quality" of the schedule based on criteria such as:
+   - Balanced distribution between rest days and workout days
+   - Suitability of the workout type with the user's goal
+   - Not repeating the same muscle group two consecutive days
+3. The system tries small adjustments to the schedule (swapping a day with another day, changing the workout type) and keeps the adjustment if it improves the "quality".
+4. It repeats this process until it reaches the best possible schedule within the available time.
+
+## Why This Idea?
+
+Many people know they need to work out, but they don't know how to distribute their limited time in the best way among different workout types. This project turns the "planning" problem into an optimization problem that AI can solve efficiently.
+
+## Technologies Used (or Planned to be Used)
+
+- Python
+- Hill Climbing algorithm for optimization
+- (Optional later) A simple HTML interface for user data entry
+
+## Project Status
+
+This is a graduation project for the *Elements of AI: Building AI* course. The current version is a description of the idea and methodology; the next step is writing the actual code to apply the algorithm.
+
+## Disclaimer
+
+This is an educational project only, and it does not replace consulting a professional fitness trainer before starting any workout program.
