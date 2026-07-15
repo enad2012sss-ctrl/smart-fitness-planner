@@ -1,32 +1,43 @@
 import streamlit as st
+import pandas as pd
+import datetime
 
-# إعداد عنوان الصفحة وأيقونة تفاعلية
-st.set_page_config(page_title="مخطط اللياقة الذكي", page_icon="🏋️‍♂️")
+# 4 & 5. قاموس التمارين مع وسائط مخصصة
+exercises_db = {
+    "حديد": {"name": "السكوات", "video": "https://youtu.be/some_id1", "desc": "لتقوية الأرجل"},
+    "منزلي": {"name": "الضغط", "video": "https://youtu.be/some_id2", "desc": "لشد الصدر"},
+    "يوغا": {"name": "وضعية المحارب", "video": "https://youtu.be/some_id3", "desc": "للاستشفاء"}
+}
 
-st.title("🏋️‍♂️ مخطط اللياقة البدنية الذكي")
-st.write("أدخل بياناتك للحصول على جدول التمارين المخصص لك مع الشرح بالصور المتحركة:")
+# 7. نظام الإشعارات المخصص (محاكاة)
+def schedule_notification(time, goal):
+    st.success(f"تم جدولة إشعار تحفيزي لـ {goal} في الساعة {time.strftime('%H:%M')}")
 
-# مدخلات المستخدم الذكية
-goal = st.selectbox("ما هو هدفك الرياضي الرئيسي؟", ["بناء عضلات", "خسارة وزن وحرق دهون", "لياقة عامة ومرونة"])
-level = st.selectbox("ما هو مستواك الرياضي الحالي؟", ["مبتدئ", "متوسط", "متقدم"])
-days = st.slider("كم يوماً تستطيع التدرب في الأسبوع؟", min_value=1, max_value=7, value=3)
+st.title("🏆 منصة اللياقة الذكية المتكاملة")
 
-if st.button("توليد جدول التمارين الذكي"):
-    st.success("🤖 تم توليد خطتك المخصصة بنجاح بناءً على خوارزمية التحسين:")
-    
-    # محاكاة بسيطة للذكاء الاصطناعي بناءً على مدخلات المستخدم
-    if goal == "بناء عضلات":
-        st.subheader("📅 اليوم الأول: تمارين الجزء العلوي (Upper Body)")
-        st.write("- **تمرين الضغط (Push-ups):** 3 جولات × 12 تكرار.")
-        st.image("https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z5bmt3OG9oZmsydG13c3V5M2RjNnY3ZzR5ZWdndWZqd2g2cWp6ZCZjdD1n/3o7TKoWXm3okO1kg6A/giphy.gif", caption="طريقة أداء تمرين الضغط بشكل صحيح")
-        
-        st.write("- **تمرين العقلة أو السحب (Pull-ups/Rows):** 3 جولات × 10 تكرارات.")
-        
-    elif goal == "خسارة وزن وحرق دهون":
-        st.subheader("📅 اليوم الأول: تمارين كارديو وحرق دهون (HIIT)")
-        st.write("- **تمرين القفز (Jumping Jacks):** 4 جولات × 45 ثانية.")
-        st.image("https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2Zkb2NodTVvMWNndmNqajRpdHBsZHFzcmUyd250cjIxbWlmbTVwMCZjdD1n/l3q2XhfQ8oCkm1xs4/giphy.gif", caption="تمرين القفز لحرق الدهون")
-        
-    else:
-        st.subheader("📅 اليوم الأول: لياقة عامة وإطالات")
-        st.write("- **تمارين تمدد وإطالات كاملة للجسم.**")
+# 9. دمج القياسات في قاعدة بيانات (Dataframe)
+if 'measurements' not in st.session_state:
+    st.session_state.measurements = pd.DataFrame(columns=["التاريخ", "الوزن", "الهدف"])
+
+# واجهة الميزات
+tab1, tab2, tab3 = st.tabs(["التمارين والوسائط", "القياسات والبيانات", "جدولة النشاط"])
+
+with tab1:
+    choice = st.selectbox("اختر نوع التمرين:", list(exercises_db.keys()))
+    st.write(f"### {exercises_db[choice]['name']}")
+    st.video(exercises_db[choice]['video']) # ميزة 4 و 5
+    st.info(exercises_db[choice]['desc'])
+
+with tab2:
+    st.subheader("تسجيل القياسات الجسمانية") # ميزة 9
+    new_weight = st.number_input("الوزن الحالي (كجم)")
+    if st.button("حفظ القياس"):
+        new_data = {"التاريخ": datetime.date.today(), "الوزن": new_weight, "الهدف": "تنشيف"}
+        st.session_state.measurements = pd.concat([st.session_state.measurements, pd.DataFrame([new_data])], ignore_index=True)
+    st.table(st.session_state.measurements)
+
+with tab3:
+    st.subheader("جدولة التنبيهات (ميزة 7)") # ميزة 7
+    notif_time = st.time_input("اختر وقت التنبيه اليومي:")
+    if st.button("تفعيل التنبيه"):
+        schedule_notification(notif_time, "ممارسة الرياضة")
