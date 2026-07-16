@@ -8,10 +8,8 @@ import hashlib
 import json
 import random
 
-# ========== إعداد الصفحة ==========
 st.set_page_config(page_title="🏋️ Smart Fitness", page_icon="💪", layout="wide")
 
-# ========== قاعدة البيانات ==========
 def init_db():
     conn = sqlite3.connect('fitness.db')
     c = conn.cursor()
@@ -77,68 +75,26 @@ def init_db():
         FOREIGN KEY (exercise_id) REFERENCES exercises(id)
     )''')
 
-    # إضافة التمارين الافتراضية إذا كانت قاعدة البيانات فارغة
     c.execute("SELECT COUNT(*) FROM exercises")
     if c.fetchone()[0] == 0:
         exercises = [
-            # جري
-            ("جري سريع (Sprint)", "جري", "أرجل", "وزن جسم", "متقدم",
-             "جري بأقصى سرعة لمسافة قصيرة لتطوير السرعة والقوة.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 5, 4, 90),
-            ("جري تحمل", "جري", "أرجل", "وزن جسم", "مبتدئ",
-             "جري بسرعة ثابتة لمسافات طويلة (3-5 كم) لتحسين اللياقة القلبية.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 1, 1, 60),
-            ("جري فترات (Interval)", "جري", "أرجل", "وزن جسم", "متقدم",
-             "تبديل بين الجري السريع والبطيء (1 دقيقة سريع + 2 دقيقة بطيء).",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 8, 1, 60),
-            ("جري مرتفعات", "جري", "أرجل", "وزن جسم", "متقدم",
-             "جري على منحدرات أو تلال لتقوية الأرجل وزيادة التحمل.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 6, 1, 90),
-
-            # حديد
-            ("ضغط الصدر بالبار", "حديد", "صدر", "بار", "مبتدئ",
-             "استلقِ على مقعد وادفع البار لأعلى لتقوية الصدر والكتفين.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 4, 10, 90),
-            ("سحب أمامي (Lat Pulldown)", "حديد", "ظهر", "جهاز", "مبتدئ",
-             "اسحب البار للأسفل حتى يلامس صدرك لتقوية الظهر.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 4, 12, 90),
-            ("قرفصاء بالبار", "حديد", "أرجل", "بار", "متوسط",
-             "ضع البار على كتفيك وانزل للأسفل للحصول على تمرين شامل للأرجل.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 4, 10, 120),
-            ("تجديل البايسبس", "حديد", "ذراع", "بار", "مبتدئ",
-             "امسك البار واثنِ ذراعيك لأعلى لتقوية العضلة الأمامية للذراع.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 4, 12, 60),
-
-            # وزن جسم
-            ("ضغط (Push-up)", "وزن جسم", "صدر", "وزن جسم", "مبتدئ",
-             "استلقِ على بطنك وادفع جسمك لأعلى باستخدام ذراعيك.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 15, 60),
-            ("سحب (Pull-up)", "وزن جسم", "ظهر", "وزن جسم", "متوسط",
-             "علق على البار واسحب جسمك للأعلى حتى يلامس الذقن البار.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 8, 90),
-            ("قرفصاء (Squat)", "وزن جسم", "أرجل", "وزن جسم", "مبتدئ",
-             "انزل للأسفل كأنك تجلس على كرسي ثم ارفع لتقوية الأرجل والأرداف.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 20, 60),
-            ("تمرين البطن (Crunch)", "وزن جسم", "بطن", "وزن جسم", "مبتدئ",
-             "استلقِ على ظهرك وارفع كتفيك عن الأرض لتقوية عضلات البطن.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 20, 30),
-            ("البلانك (Plank)", "وزن جسم", "بطن", "وزن جسم", "مبتدئ",
-             "اثبت في وضعية الضغط مع تثبيت الجسم مستقيمًا لتقوية الجذع.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 30, 45),
-
-            # فتنس
-            ("بيربي (Burpee)", "فتنس", "كامل الجسم", "وزن جسم", "متوسط",
-             "اجلس ثم اقفز للخلف لوضعية الضغط، ثم اقفز للأمام وقفز لأعلى.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 10, 90),
-            ("متسلق الجبال", "فتنس", "كامل الجسم", "وزن جسم", "متوسط",
-             "في وضعية الضغط، اسحب ركبتيك تجاه صدرك بالتناوب بسرعة.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 20, 30),
-            ("قفزة القرفصاء", "فتنس", "أرجل", "وزن جسم", "متوسط",
-             "قرفصاء ثم قفز لأعلى بأقصى قوة لتمرين انفجاري للأرجل.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 15, 60),
-            ("نط الحبل", "فتنس", "كامل الجسم", "حبل", "مبتدئ",
-             "اقفز فوق الحبل مع دورانه لحرق السعرات وتحسين التنسيق.",
-             "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 60, 30),
+            ("جري سريع (Sprint)", "جري", "أرجل", "وزن جسم", "متقدم", "جري بأقصى سرعة لمسافة قصيرة لتطوير السرعة والقوة.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 5, 4, 90),
+            ("جري تحمل", "جري", "أرجل", "وزن جسم", "مبتدئ", "جري بسرعة ثابتة لمسافات طويلة (3-5 كم) لتحسين اللياقة القلبية.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 1, 1, 60),
+            ("جري فترات (Interval)", "جري", "أرجل", "وزن جسم", "متقدم", "تبديل بين الجري السريع والبطيء (1 دقيقة سريع + 2 دقيقة بطيء).", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 8, 1, 60),
+            ("جري مرتفعات", "جري", "أرجل", "وزن جسم", "متقدم", "جري على منحدرات أو تلال لتقوية الأرجل وزيادة التحمل.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 6, 1, 90),
+            ("ضغط الصدر بالبار", "حديد", "صدر", "بار", "مبتدئ", "استلقِ على مقعد وادفع البار لأعلى لتقوية الصدر والكتفين.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 4, 10, 90),
+            ("سحب أمامي (Lat Pulldown)", "حديد", "ظهر", "جهاز", "مبتدئ", "اسحب البار للأسفل حتى يلامس صدرك لتقوية الظهر.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 4, 12, 90),
+            ("قرفصاء بالبار", "حديد", "أرجل", "بار", "متوسط", "ضع البار على كتفيك وانزل للأسفل للحصول على تمرين شامل للأرجل.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 4, 10, 120),
+            ("تجديل البايسبس", "حديد", "ذراع", "بار", "مبتدئ", "امسك البار واثنِ ذراعيك لأعلى لتقوية العضلة الأمامية للذراع.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 4, 12, 60),
+            ("ضغط (Push-up)", "وزن جسم", "صدر", "وزن جسم", "مبتدئ", "استلقِ على بطنك وادفع جسمك لأعلى باستخدام ذراعيك.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 15, 60),
+            ("سحب (Pull-up)", "وزن جسم", "ظهر", "وزن جسم", "متوسط", "علق على البار واسحب جسمك للأعلى حتى يلامس الذقن البار.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 8, 90),
+            ("قرفصاء (Squat)", "وزن جسم", "أرجل", "وزن جسم", "مبتدئ", "انزل للأسفل كأنك تجلس على كرسي ثم ارفع لتقوية الأرجل والأرداف.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 20, 60),
+            ("تمرين البطن (Crunch)", "وزن جسم", "بطن", "وزن جسم", "مبتدئ", "استلقِ على ظهرك وارفع كتفيك عن الأرض لتقوية عضلات البطن.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 20, 30),
+            ("البلانك (Plank)", "وزن جسم", "بطن", "وزن جسم", "مبتدئ", "اثبت في وضعية الضغط مع تثبيت الجسم مستقيمًا لتقوية الجذع.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 30, 45),
+            ("بيربي (Burpee)", "فتنس", "كامل الجسم", "وزن جسم", "متوسط", "اجلس ثم اقفز للخلف لوضعية الضغط، ثم اقفز للأمام وقفز لأعلى.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 10, 90),
+            ("متسلق الجبال", "فتنس", "كامل الجسم", "وزن جسم", "متوسط", "في وضعية الضغط، اسحب ركبتيك تجاه صدرك بالتناوب بسرعة.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 20, 30),
+            ("قفزة القرفصاء", "فتنس", "أرجل", "وزن جسم", "متوسط", "قرفصاء ثم قفز لأعلى بأقصى قوة لتمرين انفجاري للأرجل.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 15, 60),
+            ("نط الحبل", "فتنس", "كامل الجسم", "حبل", "مبتدئ", "اقفز فوق الحبل مع دورانه لحرق السعرات وتحسين التنسيق.", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 60, 30),
         ]
 
         c.executemany('''INSERT INTO exercises 
@@ -149,7 +105,6 @@ def init_db():
 
     conn.close()
 
-# ========== دوال مساعدة ==========
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -267,7 +222,18 @@ def get_plan_exercises(plan_id):
     conn.close()
     return ex
 
-# ========== صفحات التطبيق ==========
+def get_workout_history(user_id):
+    conn = sqlite3.connect('fitness.db')
+    c = conn.cursor()
+    c.execute('''SELECT wl.*, e.name 
+                 FROM workout_logs wl 
+                 JOIN exercises e ON wl.exercise_id = e.id 
+                 WHERE wl.user_id = ? 
+                 ORDER BY wl.date DESC''', (user_id,))
+    logs = c.fetchall()
+    conn.close()
+    return logs
+
 def login_page():
     st.title("🏋️ Smart Fitness Planner")
     st.subheader("تسجيل الدخول")
@@ -328,7 +294,9 @@ def dashboard_page():
     with col2:
         st.metric("🔥 السعرات المحروقة", f"{total_calories:.0f}")
     with col3:
-        st.metric("📅 أيام التدريب", len(set([log[4] for log in get_workout_history(st.session_state['user_id'])])))
+        history = get_workout_history(st.session_state['user_id'])
+        days = len(set([log[4].split()[0] for log in history])) if history else 0
+        st.metric("📅 أيام التدريب", days)
     st.divider()
     st.subheader("📚 مكتبة التمارين")
     categories = ["الكل", "جري", "حديد", "وزن جسم", "فتنس"]
@@ -430,19 +398,6 @@ def history_page():
     else:
         st.info("لا يوجد سجل تمارين حتى الآن")
 
-def get_workout_history(user_id):
-    conn = sqlite3.connect('fitness.db')
-    c = conn.cursor()
-    c.execute('''SELECT wl.*, e.name 
-                 FROM workout_logs wl 
-                 JOIN exercises e ON wl.exercise_id = e.id 
-                 WHERE wl.user_id = ? 
-                 ORDER BY wl.date DESC''', (user_id,))
-    logs = c.fetchall()
-    conn.close()
-    return logs
-
-# ========== تشغيل التطبيق ==========
 def main():
     init_db()
     if 'logged_in' not in st.session_state:
