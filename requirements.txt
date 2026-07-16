@@ -1,6 +1,11 @@
 streamlit
+sqlalchemy
 pandas
 plotly
-numpy
+openai
+bcrypt
+pillow
 requests
 python-dotenv
+streamlit-option-menu
+streamlit-lottie
