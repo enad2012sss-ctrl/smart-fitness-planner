@@ -1,12 +1,13 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-import plotly.express as px
-from datetime import datetime
 import hashlib
+from datetime import datetime
 
-st.set_page_config(page_title="🏋️ Fitness Planner", page_icon="💪", layout="wide")
+# إعداد الصفحة
+st.set_page_config(page_title="Fitness Planner", layout="wide")
 
+# 1. إدارة قاعدة البيانات
 def init_db():
     conn = sqlite3.connect('fitness.db')
     c = conn.cursor()
@@ -14,18 +15,12 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT,
-        height REAL,
-        weight REAL,
-        age INTEGER,
-        goal TEXT,
         created_at TIMESTAMP
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS exercises (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         category TEXT,
-        description TEXT,
-        gif_url TEXT,
         sets_default INTEGER,
         reps_default INTEGER
     )''')
@@ -40,55 +35,59 @@ def init_db():
         FOREIGN KEY (exercise_id) REFERENCES exercises(id)
     )''')
     
+    # إدخال تمارين افتراضية إذا كانت الجداول فارغة
     c.execute("SELECT COUNT(*) FROM exercises")
     if c.fetchone()[0] == 0:
-        exercises = [
-            ("جري سريع", "جري", "جري بأقصى سرعة", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 5, 4),
-            ("جري تحمل", "جري", "جري لمسافات طويلة", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 1, 1),
-            ("ضغط صدر", "حديد", "تمرين الصدر بالبار", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 4, 10),
-            ("سحب أمامي", "حديد", "تمرين الظهر", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 4, 12),
-            ("قرفصاء", "وزن جسم", "تمرين الأرجل", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 20),
-            ("ضغط", "وزن جسم", "تمرين الصدر", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 15),
-            ("بيربي", "فتنس", "تمرين شامل", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 10),
-            ("نط حبل", "فتنس", "تمرين كارديو", "https://media.giphy.com/media/3o7abKhOpu0N9H8l3K/giphy.gif", 3, 60),
+        ex = [
+            ("جري سريع", "جري", 5, 4),
+            ("جري تحمل", "جري", 1, 1),
+            ("ضغط صدر", "حديد", 4, 10),
+            ("سحب أمامي", "حديد", 4, 12),
+            ("قرفصاء", "وزن جسم", 3, 20),
+            ("ضغط", "وزن جسم", 3, 15),
+            ("بيربي", "فتنس", 3, 10),
+            ("نط حبل", "فتنس", 3, 60),
         ]
-        c.executemany("INSERT INTO exercises (name, category, description, gif_url, sets_default, reps_default) VALUES (?, ?, ?, ?, ?, ?)", exercises)
+        c.executemany("INSERT INTO exercises (name, category, sets_default, reps_default) VALUES (?, ?, ?, ?)", ex)
         conn.commit()
     conn.close()
 
+# تشغيل قاعدة البيانات تلقائياً
+init_db()
+
+# 2. دوال التشفير والمصادقة
 def hash_password(p):
     return hashlib.sha256(p.encode()).hexdigest()
 
-def create_user(username, password, height, weight, age, goal):
+def create_user(username, password):
     conn = sqlite3.connect('fitness.db')
     c = conn.cursor()
     try:
-        c.execute("INSERT INTO users (username, password, height, weight, age, goal, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                  (username, hash_password(password), height, weight, age, goal, datetime.now()))
+        c.execute("INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)", 
+                  (username, hash_password(password), datetime.now()))
         conn.commit()
         return True
-    except:
+    except sqlite3.IntegrityError:
         return False
     finally:
         conn.close()
 
-def authenticate(username, password):
+def login_user(username, password):
     conn = sqlite3.connect('fitness.db')
     c = conn.cursor()
-    c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hash_password(password)))
+    c.execute("SELECT id, username FROM users WHERE username = ? AND password = ?", (username, hash_password(password)))
     user = c.fetchone()
     conn.close()
     return user
 
+# 3. دوال التمارين والربط
 def get_exercises():
     conn = sqlite3.connect('fitness.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM exercises")
-    ex = c.fetchall()
+    df = pd.read_sql_query("SELECT * FROM exercises", conn)
     conn.close()
-    return ex
+    return df
 
-def log_workout(user_id, exercise_id, sets, reps):
+def log_exercise(user_id, exercise_id, sets, reps):
     conn = sqlite3.connect('fitness.db')
     c = conn.cursor()
     c.execute("INSERT INTO logs (user_id, exercise_id, date, sets, reps) VALUES (?, ?, ?, ?, ?)",
@@ -96,124 +95,95 @@ def log_workout(user_id, exercise_id, sets, reps):
     conn.commit()
     conn.close()
 
-def get_logs(user_id):
+def get_user_logs(user_id):
     conn = sqlite3.connect('fitness.db')
-    c = conn.cursor()
-    c.execute("SELECT l.*, e.name FROM logs l JOIN exercises e ON l.exercise_id = e.id WHERE l.user_id = ? ORDER BY l.date DESC", (user_id,))
-    logs = c.fetchall()
+    query = '''
+        SELECT logs.date as 'التاريخ', exercises.name as 'التمرين', exercises.category as 'الفئة', logs.sets as 'الجولات', logs.reps as 'التكرارات'
+        FROM logs 
+        JOIN exercises ON logs.exercise_id = exercises.id 
+        WHERE logs.user_id = ?
+        ORDER BY logs.date DESC
+    '''
+    df = pd.read_sql_query(query, conn, params=(user_id,))
     conn.close()
-    return logs
+    return df
 
-def login_page():
-    st.title("🏋️ Fitness Planner")
-    col1, col2 = st.columns(2)
-    with col1:
-        username = st.text_input("اسم المستخدم")
-        password = st.text_input("كلمة المرور", type="password")
+# 4. واجهة المستخدم (Streamlit UI)
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.user_id = None
+    st.session_state.username = ""
+
+if not st.session_state.logged_in:
+    st.title("🏋️‍♂️ تطبيق Fitness Planner")
+    tab1, tab2 = st.tabs(["تسجيل الدخول", "إنشاء حساب جديد"])
+    
+    with tab1:
+        user_input = st.text_input("اسم المستخدم", key="login_user")
+        pass_input = st.text_input("كلمة المرور", type="password", key="login_pass")
         if st.button("دخول"):
-            user = authenticate(username, password)
+            user = login_user(user_input, pass_input)
             if user:
-                st.session_state['user_id'] = user[0]
-                st.session_state['username'] = user[1]
-                st.session_state['logged_in'] = True
+                st.session_state.logged_in = True
+                st.session_state.user_id = user[0]
+                st.session_state.username = user[1]
+                st.success(f"مرحباً بك مجدداً {user[1]}!")
                 st.rerun()
             else:
-                st.error("بيانات غير صحيحة")
-    with col2:
-        if st.button("حساب جديد"):
-            st.session_state['show_signup'] = True
+                st.error("اسم المستخدم أو كلمة المرور غير صحيحة.")
+                
+    with tab2:
+        new_user = st.text_input("اختر اسم مستخدم", key="reg_user")
+        new_pass = st.text_input("اختر كلمة مرور", type="password", key="reg_pass")
+        if st.button("تسجيل"):
+            if new_user and new_pass:
+                if create_user(new_user, new_pass):
+                    st.success("تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.")
+                else:
+                    st.error("اسم المستخدم مسجل مسبقاً، اختر اسماً آخر.")
+            else:
+                st.warning("الرجاء ملء جميع الحقول.")
+
+else:
+    # واجهة المستخدم بعد تسجيل الدخول بنجاح
+    st.sidebar.title(f"👋 مرحباً، {st.session_state.username}")
+    if st.sidebar.button("تسجيل الخروج"):
+        st.session_state.logged_in = False
+        st.session_state.user_id = None
+        st.session_state.username = ""
+        st.rerun()
+        
+    st.title("💪 لوحة التحكم الرياضية")
+    
+    # جلب التمارين المتاحة للربط
+    exercises_df = get_exercises()
+    
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        st.subheader("📝 تسجيل تمرين جديد")
+        
+        # قائمة منسدلة لاختيار التمرين من قاعدة البيانات
+        exercise_options = {row['name']: row['id'] for _, row in exercises_df.iterrows()}
+        selected_exercise_name = st.selectbox("اختر التمرين:", list(exercise_options.keys()))
+        selected_exercise_id = exercise_options[selected_exercise_name]
+        
+        # جلب القيم الافتراضية للتمرين المحدد
+        default_data = exercises_df[exercises_df['id'] == selected_exercise_id].iloc[0]
+        
+        sets = st.number_input("عدد الجولات", min_value=1, value=int(default_data['sets_default']))
+        reps = st.number_input("عدد التكرارات", min_value=1, value=int(default_data['reps_default']))
+        
+        if st.button("حفظ التمرين في السجل"):
+            log_exercise(st.session_state.user_id, selected_exercise_id, sets, reps)
+            st.success("تم تسجيل التمرين بنجاح!")
             st.rerun()
-
-def signup_page():
-    st.title("إنشاء حساب")
-    with st.form("signup"):
-        username = st.text_input("اسم المستخدم")
-        password = st.text_input("كلمة المرور", type="password")
-        confirm = st.text_input("تأكيد", type="password")
-        height = st.number_input("الطول (سم)", 100, 250, 170)
-        weight = st.number_input("الوزن (كجم)", 30, 200, 70)
-        age = st.number_input("العمر", 10, 100, 25)
-        goal = st.selectbox("الهدف", ["فقدان وزن", "بناء عضلات", "لياقة", "صحة"])
-        if st.form_submit_button("إنشاء"):
-            if password != confirm:
-                st.error("كلمة المرور غير متطابقة")
-            elif len(password) < 6:
-                st.error("كلمة المرور قصيرة")
-            elif create_user(username, password, height, weight, age, goal):
-                st.success("تم إنشاء الحساب")
-                st.session_state['show_signup'] = False
-                st.rerun()
-            else:
-                st.error("اسم المستخدم موجود")
-
-def main():
-    init_db()
-    if 'logged_in' not in st.session_state:
-        st.session_state['logged_in'] = False
-    if 'show_signup' not in st.session_state:
-        st.session_state['show_signup'] = False
-
-    if not st.session_state['logged_in']:
-        if st.session_state.get('show_signup'):
-            signup_page()
-            if st.button("رجوع"):
-                st.session_state['show_signup'] = False
-                st.rerun()
+            
+    with col2:
+        st.subheader("📊 سجل تمارينك السابقة")
+        logs_df = get_user_logs(st.session_state.user_id)
+        
+        if not logs_df.empty:
+            st.dataframe(logs_df, use_container_width=True)
         else:
-            login_page()
-        return
-
-    st.sidebar.write(f"👋 {st.session_state['username']}")
-    page = st.sidebar.radio("القائمة", ["الرئيسية", "تمارين", "تسجيل", "سجل"])
-
-    if page == "الرئيسية":
-        st.title("الرئيسية")
-        logs = get_logs(st.session_state['user_id'])
-        st.metric("عدد التمارين", len(logs))
-        if logs:
-            df = pd.DataFrame(logs, columns=['id', 'user_id', 'exercise_id', 'date', 'sets', 'reps', 'name'])
-            st.dataframe(df[['date', 'name', 'sets', 'reps']])
-
-    elif page == "تمارين":
-        st.title("مكتبة التمارين")
-        exercises = get_exercises()
-        for ex in exercises:
-            with st.container():
-                c1, c2 = st.columns([1, 3])
-                with c1:
-                    st.image(ex[3], width=100)
-                with c2:
-                    st.subheader(ex[1])
-                    st.write(f"**التصنيف:** {ex[2]}")
-                    st.write(f"**الشرح:** {ex[3]}")
-                    st.write(f"**الجولات:** {ex[4]} | **التكرارات:** {ex[5]}")
-                st.divider()
-
-    elif page == "تسجيل":
-        st.title("تسجيل تمرين")
-        exercises = get_exercises()
-        ex_dict = {f"{ex[1]} - {ex[2]}": ex[0] for ex in exercises}
-        selected = st.selectbox("اختر التمرين", list(ex_dict.keys()))
-        if selected:
-            ex_id = ex_dict[selected]
-            col1, col2 = st.columns(2)
-            with col1:
-                sets = st.number_input("الجولات", 1, 10, 3)
-            with col2:
-                reps = st.number_input("التكرارات", 1, 50, 10)
-            if st.button("حفظ"):
-                log_workout(st.session_state['user_id'], ex_id, sets, reps)
-                st.success("تم الحفظ")
-
-    elif page == "سجل":
-        st.title("سجل التمارين")
-        logs = get_logs(st.session_state['user_id'])
-        if logs:
-            df = pd.DataFrame(logs, columns=['id', 'user_id', 'exercise_id', 'date', 'sets', 'reps', 'name'])
-            st.dataframe(df[['date', 'name', 'sets', 'reps']])
-        else:
-            st.info("لا يوجد سجل")
-
-if __name__ == "__main__":
-    main()
-```
+            st.info("لا توجد تمارين مسجلة بعد. ابدأ بإضافة تمرينك الأول!")
